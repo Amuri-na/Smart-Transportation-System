@@ -63,6 +63,37 @@ if (navigator.geolocation) {
             .bindPopup("Your Location")
             .openPopup();
 
+            // Sample taxi stations
+
+const taxiStations = [
+    {
+        name: "Mexico Taxi Station",
+        lat: 9.0107,
+        lng: 38.7613
+    },
+    {
+        name: "Piassa Taxi Station",
+        lat: 9.0358,
+        lng: 38.7525
+    },
+    {
+        name: "Bole Taxi Station",
+        lat: 8.9958,
+        lng: 38.7888
+    }
+];
+
+
+taxiStations.forEach(function(station) {
+
+    L.marker([station.lat, station.lng])
+        .addTo(map)
+        .bindPopup(
+            "<b>" + station.name + "</b><br>Taxi Station"
+        );
+
+});
+
         map.setView([userLat, userLng], 15);
 
     },
