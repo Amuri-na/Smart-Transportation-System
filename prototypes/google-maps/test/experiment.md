@@ -22,6 +22,16 @@ Can we get the user's current location?
 Success:
 User location appears on the map.
 
+Result:
+Location access works successfully using browser GPS.
+
+Observation:
+Laptop location was inaccurate because it relies on network positioning.
+Phone testing provided better accuracy using GPS.
+
+Next improvement:
+Add accuracy visualization and continuous location tracking.
+
 ---
 
 ### Experiment 3: Station Markers
