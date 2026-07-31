@@ -1,114 +1,1408 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Smart Transportation Map Prototype</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Addis Station Advisor - Boarding Station Validation Prototype</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet/dist/leaflet.css"
-    />
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #1557b0;
+            --primary-light: #e8f0fe;
+            --accent-green: #188038;
+            --accent-green-bg: #e6f4ea;
+            --accent-amber: #b06000;
+            --accent-amber-bg: #fef7e0;
+            --accent-blue: #1a73e8;
+            --accent-blue-bg: #e8f0fe;
+            --bg-main: #f8f9fa;
+            --surface-white: #ffffff;
+            --text-dark: #202124;
+            --text-muted: #5f6368;
+            --text-light: #80868b;
+            --border-color: #dadce0;
+            --shadow-sm: 0 1px 3px rgba(60,64,67,0.12), 0 1px 2px rgba(60,64,67,0.24);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
         }
 
-        h2 {
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--text-dark);
+            background-color: var(--bg-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Navigation Bar */
+        .app-header {
+            background-color: var(--surface-white);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #1a73e8, #1557b0);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 18px;
+            box-shadow: 0 2px 6px rgba(26,115,232,0.3);
+        }
+
+        .brand-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.2;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .gps-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            background-color: var(--accent-green-bg);
+            color: var(--accent-green);
+            border: 1px solid rgba(24,128,56,0.2);
+        }
+
+        .gps-status-badge.simulated {
+            background-color: var(--accent-amber-bg);
+            color: var(--accent-amber);
+            border-color: rgba(176,96,0,0.2);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.3); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .btn-secondary {
+            background-color: var(--surface-white);
+            border: 1px solid var(--border-color);
+            color: var(--text-dark);
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f1f3f4;
+            border-color: #c6c9ce;
+        }
+
+        /* App Body Layout */
+        .app-body {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Interactive Map Container */
+        #map {
+            flex: 1;
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+        }
+
+        /* Sidebar Control & Info Panel */
+        .panel-container {
+            width: 440px;
+            max-width: 100%;
+            background-color: var(--surface-white);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: var(--shadow-lg);
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Destination Control Form */
+        .destination-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .select-custom {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+            background-color: #f8f9fa;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%205f6368' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+
+        .select-custom:focus {
+            border-color: var(--primary);
+            background-color: var(--surface-white);
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
+        }
+
+        .quick-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .chip-btn {
+            background-color: #f1f3f4;
+            border: 1px solid #e0e0e0;
+            color: var(--text-dark);
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .chip-btn:hover, .chip-btn.active {
+            background-color: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary-dark);
+        }
+
+        /* Source Tag Badges */
+        .source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .source-badge.live {
+            background-color: var(--accent-green-bg);
+            color: var(--accent-green);
+        }
+
+        .source-badge.prototype {
+            background-color: var(--accent-amber-bg);
+            color: var(--accent-amber);
+        }
+
+        .source-badge.future {
+            background-color: var(--accent-blue-bg);
+            color: var(--accent-blue);
+        }
+
+        /* Hero Recommendation Card */
+        .recommendation-hero {
+            background: linear-gradient(180deg, #f0f7ff 0%, #ffffff 100%);
+            border: 2px solid var(--primary);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 16px;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(26,115,232,0.12);
+        }
+
+        .rec-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--primary);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(26,115,232,0.3);
+        }
+
+        .rec-station-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .rec-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .rec-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+            background: var(--surface-white);
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-sm);
+            padding: 10px;
+        }
+
+        .metric-cell {
             text-align: center;
         }
 
-        #map {
-            height: 90vh;
-            width: 100%;
+        .metric-val {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.2;
+        }
+
+        .metric-lbl {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        /* Why Explanation List */
+        .why-container {
+            background-color: rgba(26,115,232,0.04);
+            border-left: 3.5px solid var(--primary);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            padding: 10px 12px;
+        }
+
+        .why-header {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .why-list {
+            list-style: none;
+        }
+
+        .why-item {
+            font-size: 12px;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .why-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .why-bullet {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        /* Station Cards List */
+        .station-card {
+            background-color: var(--surface-white);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .station-card:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
+        }
+
+        .station-card.selected {
+            border-color: var(--primary);
+            background-color: #f8fbff;
+        }
+
+        .station-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .station-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .station-rank-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background-color: #f1f3f4;
+            color: var(--text-muted);
+        }
+
+        .station-card.recommended-card .station-rank-badge {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+        }
+
+        .station-details-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+            padding-top: 6px;
+            border-top: 1px dashed #e0e0e0;
+            margin-top: 6px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Transparency Panel */
+        .transparency-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .transparency-card {
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            font-size: 12px;
+        }
+
+        .transparency-card.live-card {
+            background-color: var(--accent-green-bg);
+            border: 1px solid rgba(24,128,56,0.2);
+        }
+
+        .transparency-card.prototype-card {
+            background-color: var(--accent-amber-bg);
+            border: 1px solid rgba(176,96,0,0.2);
+        }
+
+        .transparency-card.future-card {
+            background-color: var(--accent-blue-bg);
+            border: 1px solid rgba(26,115,232,0.2);
+        }
+
+        .transparency-title {
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .transparency-list {
+            padding-left: 18px;
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+
+        /* User Validation Survey Box */
+        .validation-card {
+            background: #ffffff;
+            border: 1.5px solid #d2e3fc;
+            border-radius: var(--radius-md);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .survey-question {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .survey-options {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .survey-btn {
+            flex: 1;
+            padding: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #f1f3f4;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .survey-btn:hover, .survey-btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+            opacity: 0.7;
+        }
+
+        /* Custom Leaflet Map Markers */
+        .user-location-marker {
+            width: 20px;
+            height: 20px;
+            background-color: #1a73e8;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(26,115,232,0.8);
+            animation: pulse-marker 2s infinite;
+        }
+
+        @keyframes pulse-marker {
+            0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.6); }
+            70% { box-shadow: 0 0 0 14px rgba(26, 115, 232, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+        }
+
+        .station-marker-pin {
+            background-color: #ffffff;
+            border: 2px solid #5f6368;
+            border-radius: 14px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #202124;
+            box-shadow: var(--shadow-md);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .station-marker-pin.recommended {
+            border-color: var(--primary);
+            background-color: #f0f7ff;
+            color: var(--primary-dark);
+            box-shadow: 0 0 12px rgba(26,115,232,0.4);
+            transform: scale(1.08);
+        }
+
+        /* Responsiveness */
+        @media (max-width: 800px) {
+            .app-body {
+                flex-direction: column-reverse;
+            }
+            .panel-container {
+                width: 100%;
+                height: 55vh;
+                border-right: none;
+                border-top: 1px solid var(--border-color);
+            }
+            #map {
+                height: 45vh;
+            }
         }
     </style>
 </head>
-
 <body>
 
-<h2>Smart Transportation System Prototype</h2>
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="brand-container">
+            <div class="brand-icon">📍</div>
+            <div>
+                <div class="brand-title">Addis Station Advisor</div>
+                <div class="brand-subtitle">Boarding Station Validation Prototype</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div id="gpsStatusBadge" class="gps-status-badge">
+                <span class="pulse-dot"></span>
+                <span id="gpsStatusText">Acquiring GPS...</span>
+            </div>
+            <button id="toggleGpsBtn" class="btn-secondary" title="Switch between real device GPS and simulated Addis Ababa location">
+                📍 Simulate Location
+            </button>
+        </div>
+    </header>
 
-<div id="map"></div>
+    <!-- App Body -->
+    <div class="app-body">
+        
+        <!-- Left/Bottom Control & Results Drawer -->
+        <aside class="panel-container">
+            
+            <!-- Destination Selection -->
+            <section class="panel-section">
+                <div class="destination-card">
+                    <div class="form-group">
+                        <label class="form-label" for="destinationSelect">Where are you heading?</label>
+                        <select id="destinationSelect" class="select-custom">
+                            <option value="">-- Select Destination --</option>
+                            <option value="Ayat">Ayat (አያት)</option>
+                            <option value="Bole">Bole (ቦሌ)</option>
+                            <option value="Piassa">Piassa (ፒያሳ)</option>
+                            <option value="CMC">CMC (ሲኤምሲ)</option>
+                            <option value="Megenagna">Megenagna (መገናኛ)</option>
+                        </select>
+                    </div>
+                    <div class="quick-chips">
+                        <span class="chip-btn" data-dest="Ayat">Ayat</span>
+                        <span class="chip-btn" data-dest="Bole">Bole</span>
+                        <span class="chip-btn" data-dest="Piassa">Piassa</span>
+                        <span class="chip-btn" data-dest="CMC">CMC</span>
+                        <span class="chip-btn" data-dest="Megenagna">Megenagna</span>
+                    </div>
+                </div>
+            </section>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+            <!-- Recommendation & Station Results Section -->
+            <section class="panel-section">
+                <div class="section-header">
+                    <span class="section-title">Boarding Station Options</span>
+                    <span id="filteredCountBadge" class="source-badge live">0 Stations</span>
+                </div>
 
-<script>
+                <!-- Main Recommendation Hero Banner -->
+                <div id="recommendationHero" style="display: none;"></div>
 
-const map = L.map('map').setView([9.0320, 38.7469], 13);
+                <!-- Filtered Station Cards List -->
+                <div id="stationsList">
+                    <div class="empty-state">
+                        <div class="empty-icon">🚏</div>
+                        <div style="font-weight: 600; margin-bottom: 4px;">Select a Destination</div>
+                        <div style="font-size: 13px;">Choose your target destination above to filter relevant boarding stations and calculate the optimal recommendation.</div>
+                    </div>
+                </div>
+            </section>
 
-L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {
-        attribution: '&copy; OpenStreetMap contributors'
-    }
-).addTo(map);
+            <!-- Data Transparency Panel -->
+            <section class="panel-section">
+                <div class="section-header">
+                    <span class="section-title">🛡️ Data Transparency Panel</span>
+                </div>
+                <div class="transparency-grid">
+                    <div class="transparency-card live-card">
+                        <div class="transparency-title">
+                            <span class="source-badge live">🟢 Live Data</span>
+                        </div>
+                        <ul class="transparency-list">
+                            <li>User GPS Location & Accuracy radius</li>
+                            <li>OpenStreetMap base map tiles</li>
+                            <li>OSRM Walking Distance & Time calculation</li>
+                        </ul>
+                    </div>
 
-L.marker([9.0320,38.7469])
-.addTo(map)
-.bindPopup("Addis Ababa")
-.openPopup();
+                    <div class="transparency-card prototype-card">
+                        <div class="transparency-title">
+                            <span class="source-badge prototype">🟡 Prototype Data</span>
+                        </div>
+                        <ul class="transparency-list">
+                            <li>Queue length (passenger count)</li>
+                            <li>Taxi availability (waiting minivans)</li>
+                            <li>Estimated queue waiting time</li>
+                            <li>Road Congestion Estimate</li>
+                        </ul>
+                    </div>
 
-if (navigator.geolocation) {
+                    <div class="transparency-card future-card">
+                        <div class="transparency-title">
+                            <span class="source-badge future">🔵 Future Roadmap</span>
+                        </div>
+                        <ul class="transparency-list">
+                            <li>AI Camera Taxi Counting & Queue Estimation</li>
+                            <li>Crowdsourced Passenger Community Reports</li>
+                            <li>Anbessa/Sheger Bus & Taxi Union Dispatch API</li>
+                            <li>Google Live Traffic Layer Integration</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
 
-    navigator.geolocation.getCurrentPosition(
-    function(position) {
+            <!-- User Validation Survey Panel -->
+            <section class="panel-section">
+                <div class="section-header">
+                    <span class="section-title">📋 UX Validation Feedback</span>
+                </div>
+                <div class="validation-card">
+                    <div class="survey-question">1. Can you quickly identify the best boarding station?</div>
+                    <div class="survey-options" data-q="q1">
+                        <button class="survey-btn">Yes, easily</button>
+                        <button class="survey-btn">Somewhat</button>
+                        <button class="survey-btn">No</button>
+                    </div>
 
-        const userLat = position.coords.latitude;
-        const userLng = position.coords.longitude;
+                    <div class="survey-question">2. Is the recommendation rationale clear?</div>
+                    <div class="survey-options" data-q="q2">
+                        <button class="survey-btn">Very Clear</button>
+                        <button class="survey-btn">Neutral</button>
+                        <button class="survey-btn">Confusing</button>
+                    </div>
 
-        L.marker([userLat, userLng])
-            .addTo(map)
-            .bindPopup("Your Location")
-            .openPopup();
+                    <div class="survey-question">3. Would you trust this recommendation?</div>
+                    <div class="survey-options" data-q="q3">
+                        <button class="survey-btn">High Trust</button>
+                        <button class="survey-btn">Moderate</button>
+                        <button class="survey-btn">Low Trust</button>
+                    </div>
 
-            // Sample taxi stations
+                    <button id="submitFeedbackBtn" class="btn-secondary" style="width: 100%; justify-content: center; background-color: var(--primary); color: white; border: none; margin-top: 4px;">
+                        Submit Prototype Validation Response
+                    </button>
+                    <div id="feedbackToast" style="display: none; text-align: center; color: var(--accent-green); font-size: 12px; font-weight: 600; margin-top: 8px;">
+                        ✓ Thank you! Response recorded for prototype validation.
+                    </div>
+                </div>
+            </section>
 
-const taxiStations = [
-    {
-        name: "Mexico Taxi Station",
-        lat: 9.0107,
-        lng: 38.7613
-    },
-    {
-        name: "Piassa Taxi Station",
-        lat: 9.0358,
-        lng: 38.7525
-    },
-    {
-        name: "Bole Taxi Station",
-        lat: 8.9958,
-        lng: 38.7888
-    }
-];
+        </aside>
 
+        <!-- Leaflet Map Container -->
+        <main id="map"></main>
 
-taxiStations.forEach(function(station) {
+    </div>
 
-    L.marker([station.lat, station.lng])
-        .addTo(map)
-        .bindPopup(
-            "<b>" + station.name + "</b><br>Taxi Station"
-        );
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-});
+    <script>
+        /**
+         * ADDIS ABABA TRANSPORTATION VALIDATION PROTOTYPE
+         * Architecture & State Management
+         */
 
-        map.setView([userLat, userLng], 15);
+        // Station Master Dataset with Real Coordinates & Prototype Transportation Metrics
+        const STATIONS = [
+            {
+                id: "mexico",
+                name: "Mexico Taxi & Bus Station",
+                shortName: "Mexico",
+                lat: 9.0107,
+                lng: 38.7613,
+                destinations: {
+                    "Ayat": { queue: 16, taxis: 4, waitMins: 14, congestion: "Moderate Traffic" },
+                    "Bole": { queue: 8, taxis: 7, waitMins: 5, congestion: "Light Traffic" },
+                    "Piassa": { queue: 19, taxis: 2, waitMins: 17, congestion: "Heavy Traffic" },
+                    "CMC": { queue: 13, taxis: 5, waitMins: 10, congestion: "Moderate Traffic" },
+                    "Megenagna": { queue: 15, taxis: 3, waitMins: 12, congestion: "Moderate Traffic" }
+                }
+            },
+            {
+                id: "piassa",
+                name: "Piassa Taxi Hub",
+                shortName: "Piassa",
+                lat: 9.0358,
+                lng: 38.7525,
+                destinations: {
+                    "Bole": { queue: 11, taxis: 6, waitMins: 9, congestion: "Heavy Traffic" },
+                    "Mexico": { queue: 5, taxis: 9, waitMins: 4, congestion: "Light Traffic" },
+                    "Megenagna": { queue: 22, taxis: 3, waitMins: 20, congestion: "Heavy Traffic" },
+                    "CMC": { queue: 17, taxis: 4, waitMins: 15, congestion: "Moderate Traffic" }
+                }
+            },
+            {
+                id: "bole",
+                name: "Bole Medhanialem Station",
+                shortName: "Bole",
+                lat: 8.9958,
+                lng: 38.7888,
+                destinations: {
+                    "Mexico": { queue: 6, taxis: 8, waitMins: 4, congestion: "Light Traffic" },
+                    "Piassa": { queue: 12, taxis: 4, waitMins: 10, congestion: "Moderate Traffic" },
+                    "Megenagna": { queue: 7, taxis: 8, waitMins: 6, congestion: "Light Traffic" },
+                    "CMC": { queue: 9, taxis: 6, waitMins: 7, congestion: "Light Traffic" },
+                    "Ayat": { queue: 11, taxis: 5, waitMins: 9, congestion: "Moderate Traffic" }
+                }
+            },
+            {
+                id: "megenagna",
+                name: "Megenagna Grand Terminal",
+                shortName: "Megenagna",
+                lat: 9.0185,
+                lng: 38.8020,
+                destinations: {
+                    "Ayat": { queue: 4, taxis: 10, waitMins: 3, congestion: "Light Traffic" },
+                    "CMC": { queue: 5, taxis: 9, waitMins: 4, congestion: "Light Traffic" },
+                    "Bole": { queue: 14, taxis: 4, waitMins: 11, congestion: "Moderate Traffic" },
+                    "Mexico": { queue: 18, taxis: 3, waitMins: 15, congestion: "Heavy Traffic" },
+                    "Piassa": { queue: 16, taxis: 4, waitMins: 13, congestion: "Heavy Traffic" }
+                }
+            },
+            {
+                id: "gerji",
+                name: "Gerji Imperial Station",
+                shortName: "Gerji",
+                lat: 8.9982,
+                lng: 38.8083,
+                destinations: {
+                    "Bole": { queue: 4, taxis: 8, waitMins: 3, congestion: "Light Traffic" },
+                    "Megenagna": { queue: 8, taxis: 7, waitMins: 6, congestion: "Light Traffic" },
+                    "Piassa": { queue: 14, taxis: 3, waitMins: 12, congestion: "Moderate Traffic" },
+                    "Mexico": { queue: 13, taxis: 4, waitMins: 10, congestion: "Moderate Traffic" }
+                }
+            },
+            {
+                id: "cmc",
+                name: "CMC St. Michael Terminal",
+                shortName: "CMC",
+                lat: 9.0215,
+                lng: 38.8350,
+                destinations: {
+                    "Megenagna": { queue: 5, taxis: 9, waitMins: 4, congestion: "Light Traffic" },
+                    "Ayat": { queue: 6, taxis: 8, waitMins: 5, congestion: "Light Traffic" },
+                    "Bole": { queue: 13, taxis: 4, waitMins: 11, congestion: "Moderate Traffic" },
+                    "Mexico": { queue: 17, taxis: 3, waitMins: 14, congestion: "Heavy Traffic" }
+                }
+            }
+        ];
 
-    },
-    function(error) {
-        console.log(error);
-    },
-    {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-    });
+        // Simulated default user location in Addis Ababa (Kazanchis / Stadium area)
+        const SIMULATED_USER_POS = {
+            lat: 9.0150,
+            lng: 38.7650,
+            accuracy: 15
+        };
 
+        // Application State
+        let map = null;
+        let userMarker = null;
+        let accuracyCircle = null;
+        let stationMarkers = [];
+        let routePolylines = [];
+        
+        let currentUserPos = { ...SIMULATED_USER_POS };
+        let isUsingRealGps = false;
+        let selectedDestination = "";
+        let activeFilteredStations = [];
 
-}
-</script>
+        /**
+         * Initialize Leaflet Map
+         */
+        function initMap() {
+            // Default center on Addis Ababa
+            map = L.map('map', {
+                zoomControl: true
+            }).setView([currentUserPos.lat, currentUserPos.lng], 13);
 
+            // OpenStreetMap Tile Layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Addis Ababa Transit Prototype'
+            }).addTo(map);
+
+            // Trigger Geolocation request on load
+            requestUserGeolocation();
+        }
+
+        /**
+         * Request HTML5 Browser Geolocation
+         */
+        function requestUserGeolocation() {
+            const statusBadge = document.getElementById('gpsStatusBadge');
+            const statusText = document.getElementById('gpsStatusText');
+
+            if (navigator.geolocation) {
+                statusText.innerText = "Requesting GPS...";
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        currentUserPos = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            accuracy: Math.round(position.coords.accuracy) || 12
+                        };
+                        isUsingRealGps = true;
+                        
+                        statusBadge.className = "gps-status-badge";
+                        statusText.innerHTML = `🟢 Live GPS: ±${currentUserPos.accuracy}m`;
+
+                        updateUserMarker();
+                        if (selectedDestination) recalculateAndRender();
+                    },
+                    (error) => {
+                        console.warn("GPS Permission Denied or Failed. Fallback to Simulated Location.", error);
+                        setSimulatedLocationMode("GPS Denied - Simulated");
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } else {
+                setSimulatedLocationMode("No GPS Support - Simulated");
+            }
+        }
+
+        /**
+         * Set Simulated Location Mode
+         */
+        function setSimulatedLocationMode(reasonLabel = "Simulated Location") {
+            currentUserPos = { ...SIMULATED_USER_POS };
+            isUsingRealGps = false;
+            
+            const statusBadge = document.getElementById('gpsStatusBadge');
+            const statusText = document.getElementById('gpsStatusText');
+            
+            statusBadge.className = "gps-status-badge simulated";
+            statusText.innerHTML = `📍 Kazanchis (Simulated)`;
+
+            updateUserMarker();
+            if (selectedDestination) recalculateAndRender();
+        }
+
+        /**
+         * Render or Update User Location Marker on Map
+         */
+        function updateUserMarker() {
+            if (!map) return;
+
+            // Remove existing user marker & circle
+            if (userMarker) map.removeLayer(userMarker);
+            if (accuracyCircle) map.removeLayer(accuracyCircle);
+
+            // Accuracy Circle
+            accuracyCircle = L.circle([currentUserPos.lat, currentUserPos.lng], {
+                radius: currentUserPos.accuracy,
+                color: '#1a73e8',
+                fillColor: '#1a73e8',
+                fillOpacity: 0.15,
+                weight: 1
+            }).addTo(map);
+
+            // Custom Pulsing User Location Marker
+            const userIcon = L.divIcon({
+                className: 'user-location-wrapper',
+                html: '<div class="user-location-marker"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
+
+            userMarker = L.marker([currentUserPos.lat, currentUserPos.lng], { icon: userIcon })
+                .addTo(map)
+                .bindPopup(`
+                    <div style="font-family: Inter, sans-serif;">
+                        <strong>Your Current Location</strong><br>
+                        <span class="source-badge ${isUsingRealGps ? 'live' : 'prototype'}">
+                            ${isUsingRealGps ? '🟢 Live GPS' : '🟡 Simulated'}
+                        </span>
+                        <div style="font-size: 11px; margin-top: 4px; color: #5f6368;">
+                            Lat: ${currentUserPos.lat.toFixed(4)}, Lng: ${currentUserPos.lng.toFixed(4)}<br>
+                            Accuracy: ±${currentUserPos.accuracy}m
+                        </div>
+                    </div>
+                `);
+        }
+
+        /**
+         * Haversine Distance Formula (Straight-line Distance in km)
+         */
+        function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c; // Distance in kilometers
+        }
+
+        /**
+         * Fetch Real OSRM Walking Route Path & Metrics
+         */
+        async function fetchWalkingRoute(startPos, endPos) {
+            const url = `https://router.project-osrm.org/route/v1/foot/${startPos.lng},${startPos.lat};${endPos.lng},${endPos.lat}?overview=full&geometries=geojson`;
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("OSRM Routing API returned status " + response.status);
+                const data = await response.json();
+
+                if (data.routes && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    const distanceMeters = Math.round(route.distance);
+                    const durationMins = Math.ceil(route.duration / 60);
+                    const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                    
+                    return {
+                        distanceMeters: distanceMeters,
+                        durationMins: durationMins,
+                        coordinates: coordinates,
+                        source: "OSRM"
+                    };
+                }
+            } catch (err) {
+                console.warn("OSRM API unavailable, calculating via Haversine walking fallback", err);
+            }
+
+            // Fallback: Haversine distance * 1.3 walking winding factor
+            const km = calculateHaversineDistance(startPos.lat, startPos.lng, endPos.lat, endPos.lng);
+            const meters = Math.round(km * 1000 * 1.3);
+            const mins = Math.ceil(meters / 80); // ~4.8 km/h walking speed (80m/min)
+
+            return {
+                distanceMeters: meters,
+                durationMins: mins,
+                coordinates: [[startPos.lat, startPos.lng], [endPos.lat, endPos.lng]],
+                source: "Haversine"
+            };
+        }
+
+        /**
+         * Recommendation Engine Scoring Algorithm
+         * Multi-factor Score considering:
+         * - Walking Time (🟢 Live)
+         * - Waiting Time (🟡 Prototype)
+         * - Passenger Queue Level (🟡 Prototype)
+         * - Available Taxis (🟡 Prototype)
+         */
+        function calculateStationScore(walkTimeMins, waitMins, queue, taxis) {
+            const totalTripTimeMins = walkTimeMins + waitMins;
+            // Weighted penalty score (Lower score = Better station)
+            // Weight factors: Total time (x 1.5), Queue length (x 0.5), Available taxis bonus (-0.8 x taxis)
+            const score = (totalTripTimeMins * 1.5) + (queue * 0.5) - (taxis * 0.8);
+            return {
+                score: Math.max(1, score.toFixed(1)),
+                totalTimeMins: totalTripTimeMins
+            };
+        }
+
+        /**
+         * Recalculate & Render Stations for Selected Destination
+         */
+        async function recalculateAndRender() {
+            if (!selectedDestination) {
+                renderEmptyState();
+                return;
+            }
+
+            // Clear previous map objects
+            stationMarkers.forEach(m => map.removeLayer(m));
+            stationMarkers = [];
+            routePolylines.forEach(p => map.removeLayer(p));
+            routePolylines = [];
+
+            // 1. Filter stations that serve selected destination
+            const candidateStations = STATIONS.filter(st => st.destinations[selectedDestination]);
+
+            if (candidateStations.length === 0) {
+                renderEmptyState(`No stations currently serve ${selectedDestination}.`);
+                return;
+            }
+
+            // 2. Fetch routes & calculate metrics for all candidate stations
+            const stationCalculations = await Promise.all(candidateStations.map(async (st) => {
+                const destInfo = st.destinations[selectedDestination];
+                const routeInfo = await fetchWalkingRoute(currentUserPos, { lat: st.lat, lng: st.lng });
+                
+                const scoreObj = calculateStationScore(
+                    routeInfo.durationMins,
+                    destInfo.waitMins,
+                    destInfo.queue,
+                    destInfo.taxis
+                );
+
+                return {
+                    ...st,
+                    destInfo: destInfo,
+                    walkDistanceMeters: routeInfo.distanceMeters,
+                    walkDurationMins: routeInfo.durationMins,
+                    routeCoordinates: routeInfo.coordinates,
+                    score: parseFloat(scoreObj.score),
+                    totalTimeMins: scoreObj.totalTimeMins
+                };
+            }));
+
+            // 3. Sort by Score ascending (Best station first)
+            stationCalculations.sort((a, b) => a.score - b.score);
+            activeFilteredStations = stationCalculations;
+
+            const recommendedStation = activeFilteredStations[0];
+            const nearestStation = [...activeFilteredStations].sort((a, b) => a.walkDistanceMeters - b.walkDistanceMeters)[0];
+
+            // 4. Render Map Markers & Route Lines
+            const bounds = L.latLngBounds([currentUserPos.lat, currentUserPos.lng]);
+
+            activeFilteredStations.forEach((st, idx) => {
+                const isRecommended = (st.id === recommendedStation.id);
+                bounds.extend([st.lat, st.lng]);
+
+                // Map Polyline Route
+                const polyline = L.polyline(st.routeCoordinates, {
+                    color: isRecommended ? '#1a73e8' : '#94a3b8',
+                    weight: isRecommended ? 5 : 3,
+                    opacity: isRecommended ? 0.9 : 0.6,
+                    dashArray: isRecommended ? null : '6, 8'
+                }).addTo(map);
+
+                routePolylines.push(polyline);
+
+                // Custom Station Pin Icon
+                const pinIcon = L.divIcon({
+                    className: 'station-pin-wrapper',
+                    html: `
+                        <div class="station-marker-pin ${isRecommended ? 'recommended' : ''}">
+                            ${isRecommended ? '⭐ ' : ''}${st.shortName} (${st.destInfo.taxis}🚕)
+                        </div>
+                    `,
+                    iconSize: [120, 30],
+                    iconAnchor: [60, 15]
+                });
+
+                const marker = L.marker([st.lat, st.lng], { icon: pinIcon }).addTo(map);
+                marker.bindPopup(`
+                    <div style="font-family: Inter, sans-serif; padding: 4px;">
+                        <strong style="font-size: 14px;">${st.name}</strong><br>
+                        <span class="source-badge prototype" style="margin-top: 4px;">🟡 Destination: ${selectedDestination}</span>
+                        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 8px 0;">
+                        <div style="font-size: 12px; line-height: 1.6;">
+                            🚶 <strong>Walk Distance:</strong> ${st.walkDistanceMeters}m (~${st.walkDurationMins} min) <span class="source-badge live">🟢 Live</span><br>
+                            ⏱️ <strong>Est. Waiting Time:</strong> ${st.destInfo.waitMins} mins <span class="source-badge prototype">🟡 Proto</span><br>
+                            👥 <strong>Passenger Queue:</strong> ${st.destInfo.queue} people <span class="source-badge prototype">🟡 Proto</span><br>
+                            🚕 <strong>Available Taxis:</strong> ${st.destInfo.taxis} minivans <span class="source-badge prototype">🟡 Proto</span><br>
+                            🚦 <strong>Road Congestion:</strong> ${st.destInfo.congestion} <span class="source-badge prototype">🟡 Proto</span>
+                        </div>
+                    </div>
+                `);
+
+                marker.on('click', () => {
+                    highlightStationCard(st.id);
+                });
+
+                stationMarkers.push(marker);
+            });
+
+            // Adjust Map View to include user & all relevant stations
+            map.fitBounds(bounds, { padding: [50, 50] });
+
+            // 5. Render UI Hero Banner & Cards
+            renderRecommendationHero(recommendedStation, nearestStation);
+            renderStationCards(activeFilteredStations, recommendedStation.id);
+
+            document.getElementById('filteredCountBadge').innerText = `${activeFilteredStations.length} Served Stations`;
+        }
+
+        /**
+         * Render Hero Recommendation Banner
+         */
+        function renderRecommendationHero(rec, nearest) {
+            const heroEl = document.getElementById('recommendationHero');
+            heroEl.style.display = 'block';
+
+            // Formulate explanation rationale comparing recommended vs alternative
+            const whyReasons = [];
+            
+            if (rec.destInfo.waitMins < (nearest.destInfo.waitMins || 10)) {
+                whyReasons.push(`Shorter waiting time: <strong>${rec.destInfo.waitMins} mins</strong> vs ${nearest.destInfo.waitMins} mins at ${nearest.shortName}.`);
+            }
+            if (rec.destInfo.queue < (nearest.destInfo.queue || 15)) {
+                whyReasons.push(`Lower queue level: <strong>${rec.destInfo.queue} passengers</strong> in line (vs ${nearest.destInfo.queue} people).`);
+            }
+            if (rec.destInfo.taxis >= (nearest.destInfo.taxis || 3)) {
+                whyReasons.push(`Higher taxi availability: <strong>${rec.destInfo.taxis} taxis ready</strong> for ${selectedDestination}.`);
+            }
+            whyReasons.push(`Optimal balance between walking distance (<strong>${rec.walkDistanceMeters}m</strong>) and station queue turnover.`);
+
+            heroEl.className = 'recommendation-hero';
+            heroEl.innerHTML = `
+                <div class="rec-tag">⭐ Recommended Boarding Station</div>
+                <div class="rec-station-name">${rec.name}</div>
+                <div class="rec-subtitle">Best option for your commute to <strong>${selectedDestination}</strong></div>
+
+                <div class="rec-metrics-grid">
+                    <div class="metric-cell">
+                        <div class="metric-val">${rec.totalTimeMins}m</div>
+                        <div class="metric-lbl">Total Est. Commute</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-val">${rec.walkDurationMins}m</div>
+                        <div class="metric-lbl">Walk (${rec.walkDistanceMeters}m)</div>
+                    </div>
+                    <div class="metric-cell">
+                        <div class="metric-val">${rec.destInfo.waitMins}m</div>
+                        <div class="metric-lbl">Queue Wait</div>
+                    </div>
+                </div>
+
+                <div class="why-container">
+                    <div class="why-header">💡 Why this station is recommended:</div>
+                    <ul class="why-list">
+                        ${whyReasons.map(r => `<li class="why-item"><span class="why-bullet">✓</span> <span>${r}</span></li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        /**
+         * Render Filtered Station Cards List
+         */
+        function renderStationCards(stations, recommendedId) {
+            const listEl = document.getElementById('stationsList');
+            listEl.innerHTML = '';
+
+            stations.forEach((st, index) => {
+                const isRec = (st.id === recommendedId);
+                const card = document.createElement('div');
+                card.className = `station-card ${isRec ? 'recommended-card' : ''}`;
+                card.id = `card-${st.id}`;
+                
+                card.innerHTML = `
+                    <div class="station-card-header">
+                        <div>
+                            <div class="station-title">${st.name}</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                Serving <strong>${selectedDestination}</strong>
+                            </div>
+                        </div>
+                        <span class="station-rank-badge">
+                            ${isRec ? '⭐ Best Option' : `#${index + 1} Alternative`}
+                        </span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 12px; margin-top: 6px;">
+                        <div>🚶 Walk: <strong>${st.walkDistanceMeters}m</strong> (~${st.walkDurationMins} min) <span class="source-badge live">🟢 Live</span></div>
+                        <div>⏱️ Wait: <strong>${st.destInfo.waitMins} min</strong> <span class="source-badge prototype">🟡 Proto</span></div>
+                        <div>👥 Queue: <strong>${st.destInfo.queue} people</strong> <span class="source-badge prototype">🟡 Proto</span></div>
+                        <div>🚕 Taxis: <strong>${st.destInfo.taxis} available</strong> <span class="source-badge prototype">🟡 Proto</span></div>
+                    </div>
+
+                    <div class="station-details-row">
+                        <div class="detail-item">🚦 Traffic: <strong>${st.destInfo.congestion}</strong></div>
+                        <div class="detail-item">Est. Score: <strong>${st.score}</strong></div>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    highlightStationCard(st.id);
+                    map.setView([st.lat, st.lng], 15);
+                    const marker = stationMarkers.find(m => m.getLatLng().lat === st.lat);
+                    if (marker) marker.openPopup();
+                });
+
+                listEl.appendChild(card);
+            });
+        }
+
+        /**
+         * Highlight Active Station Card
+         */
+        function highlightStationCard(stationId) {
+            document.querySelectorAll('.station-card').forEach(c => c.classList.remove('selected'));
+            const card = document.getElementById(`card-${stationId}`);
+            if (card) {
+                card.classList.add('selected');
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        /**
+         * Render Empty State
+         */
+        function renderEmptyState(message = "Choose your target destination above to filter relevant boarding stations.") {
+            document.getElementById('recommendationHero').style.display = 'none';
+            document.getElementById('filteredCountBadge').innerText = "0 Stations";
+            
+            const listEl = document.getElementById('stationsList');
+            listEl.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🚏</div>
+                    <div style="font-weight: 600; margin-bottom: 4px;">Select a Destination</div>
+                    <div style="font-size: 13px;">${message}</div>
+                </div>
+            `;
+        }
+
+        /**
+         * Event Listeners & UI Wire-up
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+
+            // Destination Select Change
+            const selectEl = document.getElementById('destinationSelect');
+            selectEl.addEventListener('change', (e) => {
+                selectedDestination = e.target.value;
+                
+                // Sync Chip UI
+                document.querySelectorAll('.chip-btn').forEach(chip => {
+                    chip.classList.toggle('active', chip.dataset.dest === selectedDestination);
+                });
+
+                recalculateAndRender();
+            });
+
+            // Quick Chips Click
+            document.querySelectorAll('.chip-btn').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    selectedDestination = chip.dataset.dest;
+                    selectEl.value = selectedDestination;
+
+                    document.querySelectorAll('.chip-btn').forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+
+                    recalculateAndRender();
+                });
+            });
+
+            // Toggle GPS / Simulated Location Mode
+            document.getElementById('toggleGpsBtn').addEventListener('click', () => {
+                if (isUsingRealGps) {
+                    setSimulatedLocationMode();
+                } else {
+                    requestUserGeolocation();
+                }
+            });
+
+            // UX Validation Survey Buttons
+            document.querySelectorAll('.survey-options').forEach(group => {
+                const btns = group.querySelectorAll('.survey-btn');
+                btns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        btns.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    });
+                });
+            });
+
+            // Validation Feedback Submission
+            document.getElementById('submitFeedbackBtn').addEventListener('click', () => {
+                const toast = document.getElementById('feedbackToast');
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3500);
+            });
+        });
+    </script>
 </body>
 </html>
