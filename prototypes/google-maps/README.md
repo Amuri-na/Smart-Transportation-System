@@ -57,4 +57,4 @@ Transportation data is currently simulated for validation purposes.
 - CSS
 - JavaScript
 
-> Technology choices for the final MVP (Flutter, React, etc.) will be decided after prototype validation.
+> Technology choices for the final MVP (Flutter, React, etc...) will be decided after prototype validation.
